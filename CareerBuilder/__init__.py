@@ -3,20 +3,34 @@ import xmltodict
 
 
 class CareerBuilder:
-    base_api_url = 'http://api.careerbuilder.com/v1/'
+    _base_api_url = 'http://api.careerbuilder.com'
 
-    def __init__(self, developer_key):
+    @property
+    def base_api_url(self):
+        return "%s/%s/" % (self._base_api_url, self.api_version)
+
+    def __init__(self,
+                 developer_key,
+                 api_version="v2",
+                 base_url=None):
         self.developer_key = developer_key
+        self.api_version = api_version
+        if base_url:
+            self._base_api_url = base_url
 
     def _api_call(self, url, **kwargs):
-        url = self.base_api_url + url
+        response = {
+                'url': self.base_api_url + url,
+        }
         payload = {
             'DeveloperKey': self.developer_key,
         }
         payload = dict(payload.items() + kwargs.items())
-        resp = requests.get(url, params=payload)
-        xml = resp.text
-        return xmltodict.parse(xml)
+        resp = requests.get(response['url'], params=payload)
+        response['xml'] = resp.text
+        response['result'] = xmltodict.parse(response['xml'])
+        response['payload'] = payload
+        return response
 
     def application(self, job_id, **kwargs):
         kwargs['JobDID'] = job_id
